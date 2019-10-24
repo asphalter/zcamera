@@ -1,17 +1,17 @@
-"""Sensor for Zortrax Plus printer."""
-from datetime import timedelta
+"""Support for Zortrax Plus Printer."""
 import logging
+import base64
+import socket
+import json
+import struct
 
 import voluptuous as vol
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import VOLUME_LITERS
+from homeassistant.components.switch import SwitchDevice, PLATFORM_SCHEMA
+from homeassistant.const import CONF_ZPRINTER_HOST, CONF_ZPRINTER_PORT, CONF_NAME
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
-
-SCAN_INTERVAL = timedelta(seconds=10)
 
 CONF_ICON = "mdi:printer"
 DEFAULT_NAME = "Zortrax Plus Printer"
@@ -28,50 +28,36 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up a Zortrax Plus Printer Camera."""
+    """Set up a Zortrax Plus Printer."""
     if discovery_info:
         config = PLATFORM_SCHEMA(discovery_info)
-    add_entities([ZortraxPrinter(config)])
+    async_add_entities([ZortraxPrinter(config)])
 
 
-class ZortraxPrinter(Entity):
-    """Representation of a Sensor."""
+class ZortraxPrinter(SwitchDevice):
 
-    def __init__(self, device_info):
-        """Initialize Zortrax Plus Printer Camera."""
-        super().__init__()
+    def __init__(self, smartplug, name):
+        """Initialize the switch."""
         self._name = device_info.get(CONF_NAME)
         self._zprinter_host = device_info.get(CONF_ZPRINTER_HOST)
         self._zprinter_port = device_info.get(CONF_ZPRINTER_PORT)
-        self._attributes = {}
-        self._available = None
+        self._printing = None
         self._state = None
-        self.client = device_info
 
     @property
     def name(self):
-        """Return the name of the sensor."""
+        """Return the name of the switch."""
         return self._name
 
     @property
     def state(self):
-        """Return the state of the sensor."""
+        """Return true if switch is on."""
         return self._state
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return VOLUME_LITERS
-
-    @property
-    def device_state_attributes(self):
-        """Return the state attributes."""
-        return self._attributes
 
     @property
     def icon(self):
         """Return the icon of the sensor."""
-        return COMPONENT_ICON
+        return CONF_ICON
 
     def get_json_packet(self, json_request):
         """Return json reply from the Zortrax Plus Printer."""
@@ -107,8 +93,16 @@ class ZortraxPrinter(Entity):
         return json_reply
 
 
-    def get_status(self):
-        """Get a Zortrax Plus Printer Camera frame"""
+    def turn_on(self, **kwargs):
+        """Turn the switch on."""
+        _LOGGER.info("DO NOTHING: ON")
+
+    def turn_off(self, **kwargs):
+        """Turn the switch off."""
+        _LOGGER.info("DO NOTHING: OFF")
+
+    def update(self):
+        """Update Zortrax Plus Printer state"""
         status = {}
         to_printer = {}
         commands = []
@@ -119,31 +113,14 @@ class ZortraxPrinter(Entity):
         to_printer['commands'] = commands
 
         json_request = json.dumps(to_printer)
-        json_response = self.camera_get_json_packet(json_request)
+        json_response = self._get_json_packet(json_request)
 
         if not self._available:
             return
 
         if 'responses' in json_response and 'fields' in json_response['responses'][0] and json_response['responses'][0]['status'] == "1":
             for field in json_response['responses'][0]['fields']:
-                status[field['name']] = status['value']
-
-        return status
-
-
-    def _fetch_data(self):
-        """Fetch latest Zortrax Plus data."""
-        try:
-            self.client.update()
-            self._state = self.client.state
-            self._available = True
-            for k,v in get_status():
-                self._attributes[k] = vol
-        except:
-            _LOGGER.error("Unable to fetch data")
-
-    def update(self):
-        """Return the latest collected data from the printer."""
-        self._fetch_data()
-        _LOGGER.debug("Zortrax Plus Printer data state is: %s.", self._state)
-
+                if field['name'] == 'printerStatus'
+                    self._state = field['value']
+                    _LOGGER.debug("Got Zortrax Printer state '%s'" % (self._state))
+                    return
