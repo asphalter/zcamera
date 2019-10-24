@@ -27,17 +27,19 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-async def async_setup_platform(hass, config, add_entities, discovery_info=None):
+def setup_platform(hass, config, add_entities, discovery_info=None):
+    _LOGGER.debug("ADD ENTITY")
     """Set up a Zortrax Plus Printer."""
     if discovery_info:
         config = PLATFORM_SCHEMA(discovery_info)
-    async_add_entities([ZortraxPrinter(config)])
+    add_entities([ZortraxPrinter(config)])
 
 
 class ZortraxPrinter(SwitchDevice):
 
     def __init__(self, smartplug, name):
         """Initialize the switch."""
+        _LOGGER.debug("Init switch")
         self._name = device_info.get(CONF_NAME)
         self._zprinter_host = device_info.get(CONF_ZPRINTER_HOST)
         self._zprinter_port = device_info.get(CONF_ZPRINTER_PORT)
@@ -46,20 +48,24 @@ class ZortraxPrinter(SwitchDevice):
 
     @property
     def name(self):
+        _LOGGER.debug("Return name")
         """Return the name of the switch."""
         return self._name
 
     @property
     def state(self):
+        _LOGGER.debug("Return state")
         """Return true if switch is on."""
         return self._state
 
     @property
     def icon(self):
+        _LOGGER.debug("Return icon")
         """Return the icon of the sensor."""
         return CONF_ICON
 
     def get_json_packet(self, json_request):
+        _LOGGER.debug("Return json pack")
         """Return json reply from the Zortrax Plus Printer."""
         json_request_len = len(json_request)
         json_request_packed = struct.pack(">h", json_request_len) + json_request.encode('ascii')
@@ -102,6 +108,7 @@ class ZortraxPrinter(SwitchDevice):
         _LOGGER.info("DO NOTHING: OFF")
 
     def update(self):
+        _LOGGER.debug("Return upd")
         """Update Zortrax Plus Printer state"""
         status = {}
         to_printer = {}
@@ -113,7 +120,7 @@ class ZortraxPrinter(SwitchDevice):
         to_printer['commands'] = commands
 
         json_request = json.dumps(to_printer)
-        json_response = self._get_json_packet(json_request)
+        json_response = self.get_json_packet(json_request)
 
         if not self._available:
             return
