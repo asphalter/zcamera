@@ -130,6 +130,9 @@ class ZortraxPrinter(SwitchDevice):
         if 'responses' in json_response and 'fields' in json_response['responses'][0] and json_response['responses'][0]['status'] == "1":
             for field in json_response['responses'][0]['fields']:
                 if field['name'] == 'printerStatus':
-                    self._state = field['value']
-                    _LOGGER.debug("Got Zortrax Printer state '%s'" % (self._state))
+                    if field['value'] == 'printing':
+                        self._state = True
+                    else:
+                        self._state = False
+                    _LOGGER.info("Got Zortrax Printer status '%s' and returned state '%s'" % (field['value'], str(self._state)))
                     return
