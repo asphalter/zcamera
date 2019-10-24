@@ -7,8 +7,10 @@ import struct
 
 import voluptuous as vol
 
+from homeassistant.const import (
+    CONF_NAME,
+)
 from homeassistant.components.switch import SwitchDevice, PLATFORM_SCHEMA
-from homeassistant.const import CONF_ZPRINTER_HOST, CONF_ZPRINTER_PORT, CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 class ZortraxPrinter(SwitchDevice):
 
-    def __init__(self, smartplug, name):
+    def __init__(self, device_info):
         """Initialize the switch."""
         _LOGGER.debug("Init switch")
         self._name = device_info.get(CONF_NAME)
@@ -127,7 +129,7 @@ class ZortraxPrinter(SwitchDevice):
 
         if 'responses' in json_response and 'fields' in json_response['responses'][0] and json_response['responses'][0]['status'] == "1":
             for field in json_response['responses'][0]['fields']:
-                if field['name'] == 'printerStatus'
+                if field['name'] == 'printerStatus':
                     self._state = field['value']
                     _LOGGER.debug("Got Zortrax Printer state '%s'" % (self._state))
                     return
