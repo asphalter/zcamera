@@ -30,7 +30,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    _LOGGER.debug("ADD ENTITY")
     """Set up a Zortrax Plus Printer."""
     if discovery_info:
         config = PLATFORM_SCHEMA(discovery_info)
@@ -41,33 +40,34 @@ class ZortraxPrinter(SwitchDevice):
 
     def __init__(self, device_info):
         """Initialize the switch."""
-        _LOGGER.debug("Init switch")
         self._name = device_info.get(CONF_NAME)
         self._zprinter_host = device_info.get(CONF_ZPRINTER_HOST)
         self._zprinter_port = device_info.get(CONF_ZPRINTER_PORT)
+        self._available = None
         self._printing = None
         self._state = None
 
     @property
     def name(self):
-        _LOGGER.debug("Return name")
         """Return the name of the switch."""
         return self._name
 
     @property
     def state(self):
-        _LOGGER.debug("Return state")
         """Return true if switch is on."""
         return self._state
 
     @property
     def icon(self):
-        _LOGGER.debug("Return icon")
-        """Return the icon of the sensor."""
+        """Return the icon of the switch."""
         return CONF_ICON
 
+    @property
+    def available(self):
+        """Return True if switch is available."""
+        return self._available
+
     def get_json_packet(self, json_request):
-        _LOGGER.debug("Return json pack")
         """Return json reply from the Zortrax Plus Printer."""
         json_request_len = len(json_request)
         json_request_packed = struct.pack(">h", json_request_len) + json_request.encode('ascii')
@@ -100,17 +100,15 @@ class ZortraxPrinter(SwitchDevice):
 
         return json_reply
 
-
     def turn_on(self, **kwargs):
         """Turn the switch on."""
-        _LOGGER.info("DO NOTHING: ON")
+        _LOGGER.info("DO NOTHING FOR NOW: ON")
 
     def turn_off(self, **kwargs):
         """Turn the switch off."""
-        _LOGGER.info("DO NOTHING: OFF")
+        _LOGGER.info("DO NOTHING FOR NOW: OFF")
 
     def update(self):
-        _LOGGER.debug("Return upd")
         """Update Zortrax Plus Printer state"""
         status = {}
         to_printer = {}
@@ -130,9 +128,6 @@ class ZortraxPrinter(SwitchDevice):
         if 'responses' in json_response and 'fields' in json_response['responses'][0] and json_response['responses'][0]['status'] == "1":
             for field in json_response['responses'][0]['fields']:
                 if field['name'] == 'printerStatus':
-                    if field['value'] == 'printing':
-                        self._state = True
-                    else:
-                        self._state = False
-                    _LOGGER.info("Got Zortrax Printer status '%s' and returned state '%s'" % (field['value'], str(self._state)))
+                    self._state = field['value']
+                    _LOGGER.info("Got Zortrax Printer status '%s'" % (self._state))
                     return
